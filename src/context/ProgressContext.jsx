@@ -55,8 +55,10 @@ export const ProgressProvider = ({ children }) => {
     };
 
     const calculateTraderLoyalty = (traderName) => {
+        // Находим квесты, которые ЛИБО сохранены в базе, ЛИБО отмечены в текущей сессии у торговцев
         const completedQuests = questsData.filter(q =>
-            q.trader === traderName && userProgress.completedQuestIds.includes(q.id)
+            q.trader === traderName &&
+            (userProgress.completedQuestIds.includes(q.id) || tradersTabSessionCompleted.includes(q.id))
         );
 
         const totalRep = completedQuests.reduce((sum, q) => sum + (q.rewards?.rep || 0), 0);
