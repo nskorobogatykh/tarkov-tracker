@@ -1,4 +1,4 @@
-[
+export const questsData = [
     {
         "id": "0",
         "trader": "Прапор",
