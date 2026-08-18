@@ -1,105 +1,158 @@
 import React, { useState } from 'react';
-import { questsData } from '../data/quests';
-import { tradersList } from '../data/traders';
 import { useProgress } from '../context/ProgressContext';
+import { getLocationClass } from '../data/locations';
 
-export const TradersPage = ({ onNavigate }) => {
-    const { progress, toggleTakeQuest, toggleCompleteQuest, calculateLoyalty } = useProgress();
-    const [openTraders, setOpenTraders] = useState(tradersList.slice(0, 3)); // первые 3 открыты по умолчанию
+export const TradersPage = ({ onQuestClick }) => {
+    const {
+        questsData,
+        userProgress,
+        setUserProgress,
+        tradersTabSessionCompleted,
+        setTradersTabSessionCompleted,
+        calculateTraderLoyalty
+    } = useProgress();
 
-    const toggleTraderAccordion = (name) => {
-        setOpenTraders(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
+    // Инициализация состояний: торговцы по умолчанию открыты, уровни лояльности - закрыты
+    const [openTraders, setOpenTraders] = useState(['Прапор', 'Терапевт', 'Механик', 'Лыжник']);
+    const [openLLGroups, setOpenLLGroups] = useState([]);
+
+    const toggleTrader = (trader) => {
+        setOpenTraders(prev => prev.includes(trader) ? prev.filter(t => t !== trader) : [...prev, trader]);
     };
 
-    return (
-        <div className="space-y-4">
-            <h2 className="text-xl font-bold text-gray-400">Торговцы и база квестов</h2>
+    const toggleLL = (groupKey) => {
+        setOpenLLGroups(prev => prev.includes(groupKey) ? prev.filter(k => k !== groupKey) : [...prev, groupKey]);
+    };
 
-            {tradersList.map(traderName => {
-                const traderQuests = questsData.filter(q => q.trader === traderName);
-                const { level, rep, doneCount } = calculateLoyalty(traderName);
-                const isOpen = openTraders.includes(traderName);
+    // Группировка
+    const tradersGrouped = {};
+    questsData.forEach(q => {
+        if (!tradersGrouped[q.trader]) tradersGrouped[q.trader] = [];
+        tradersGrouped[q.trader].push(q);
+    });
+
+    return (
+        <div className="container">
+            <h2>Торговцы и список всех квестов</h2>
+            {Object.keys(tradersGrouped).map(traderName => {
+                const quests = tradersGrouped[traderName];
+                const { level, rep } = calculateTraderLoyalty(traderName);
+                const completedCount = quests.filter(q => userProgress.completedQuestIds.includes(q.id)).length;
+                const isTraderOpen = openTraders.includes(traderName);
+
+                // Разбивка внутри торговца по LL
+                const llGroups = { 1: [], 2: [], 3: [], 4: [] };
+                quests.forEach(q => {
+                    const ll = q.minLoyalty || 1;
+                    llGroups[ll].push(q);
+                });
 
                 return (
-                    <div key={traderName} className="bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
-                        {/* Шапка торговца */}
-                        <div
-                            onClick={() => toggleTraderAccordion(traderName)}
-                            className="p-4 bg-zinc-800 flex justify-between items-center cursor-pointer hover:bg-zinc-700 transition"
-                        >
-                            <div className="flex items-center gap-4">
-                                <span className="text-lg font-bold text-amber-400">{traderName}</span>
-                                <span className="text-xs bg-black px-2 py-1 rounded text-gray-400">
-                                    УЛ: {level} | {rep} реп
-                                </span>
+                    <div key={traderName} className={`trader-accordion ${isTraderOpen ? 'open' : ''}`}>
+                        <div className="trader-header-bar" onClick={() => toggleTrader(traderName)}>
+                            <div className="trader-title-info">
+                                <span className="trader-name-text">{traderName}</span>
+                                <span className="trader-stats-badge">{level} - уровень лояльности | {rep} реп</span>
                             </div>
-                            <div className="text-sm text-gray-400">Сделано: {doneCount} / {traderQuests.length}</div>
+                            <div className="trader-stats-badge">Сделано: {completedCount} / {quests.length}</div>
                         </div>
 
-                        {/* Список квестов торговца */}
-                        {isOpen && (
-                            <div className="p-4 bg-zinc-950 space-y-2">
-                                {[1, 2, 3, 4].map(ll => {
-                                    const llQuests = traderQuests.filter(q => (q.minLoyalty || 1) === ll);
-                                    if (llQuests.length === 0) return null;
+                        <div className="trader-content">
+                            {Object.keys(llGroups).map(llLevel => {
+                                const llQuests = llGroups[llLevel];
+                                if (llQuests.length === 0) return null;
 
-                                    return (
-                                        <div key={ll} className="border border-zinc-800/60 rounded mb-4">
-                                            <div className="bg-zinc-900/50 p-2 text-sm text-amber-200/80 font-semibold border-b border-zinc-800/60">
-                                                Уровень лояльности {ll}
-                                            </div>
-                                            <div className="divide-y divide-zinc-800/40">
-                                                {llQuests.map(quest => {
-                                                    const isCompleted = progress.completedQuestIds.includes(quest.id);
-                                                    const isTaken = progress.takenQuestIds.includes(quest.id);
+                                const llCompletedCount = llQuests.filter(q =>
+                                    userProgress.completedQuestIds.includes(q.id) || tradersTabSessionCompleted.includes(q.id)
+                                ).length;
 
-                                                    return (
-                                                        <div
-                                                            key={quest.id}
-                                                            className={`p-3 flex items-center justify-between gap-4 transition ${isCompleted ? 'opacity-40 bg-zinc-900/20' : 'bg-zinc-900/40'}`}
-                                                        >
-                                                            <div className="flex items-center gap-3 flex-1">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isCompleted}
-                                                                    onChange={() => toggleCompleteQuest(quest.id)}
-                                                                    className="w-4 h-4 accent-amber-400 cursor-pointer"
-                                                                />
-                                                                <span
-                                                                    onClick={() => onNavigate('quest-detail', quest.id)}
-                                                                    className={`font-medium cursor-pointer hover:text-amber-300 transition ${isCompleted ? 'line-through text-gray-500' : 'text-gray-200'}`}
-                                                                >
-                                                                    {quest.title}
-                                                                </span>
-                                                                <span className="text-xs text-green-400 bg-emerald-950/40 border border-emerald-900 px-1.5 py-0.5 rounded">+{quest.rewards.rep} реп</span>
-                                                            </div>
+                                const isLLAllDone = llCompletedCount === llQuests.length;
+                                const groupKey = `${traderName}_LL${llLevel}`;
+                                const isLLOpen = openLLGroups.includes(groupKey);
 
-                                                            <div className="flex items-center gap-2">
-                                                                {quest.location.map(loc => (
-                                                                    <span
-                                                                        key={loc}
-                                                                        onClick={() => loc !== 'Любая' && onNavigate('map', loc)}
-                                                                        className="text-xs font-bold px-2 py-0.5 rounded cursor-pointer bg-zinc-800 text-amber-400/90 border border-zinc-700 hover:brightness-125"
-                                                                    >
-                                                                        {loc}
-                                                                    </span>
-                                                                ))}
-                                                                <button
-                                                                    onClick={() => toggleTakeQuest(quest.id)}
-                                                                    className={`text-xs font-bold px-3 py-1 rounded transition ${isTaken ? 'bg-red-900/40 text-red-300 border border-red-800' : 'bg-emerald-900/40 text-emerald-300 border border-emerald-800'}`}
-                                                                >
-                                                                    {isTaken ? 'Отменить' : 'Взять'}
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                return (
+                                    <div key={llLevel} className={`ll-group ${isLLAllDone ? 'all-completed' : ''} ${isLLOpen ? 'open' : ''}`}>
+                                        <div className="ll-header" onClick={() => toggleLL(groupKey)}>
+                                            <span>Уровень лояльности {llLevel}</span>
+                                            <span>Сделано: {llCompletedCount} / {llQuests.length}</span>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+
+                                        <div className="ll-content">
+                                            {llQuests.map(quest => {
+                                                const isSavedCompleted = userProgress.completedQuestIds.includes(quest.id);
+                                                const isSessionCompleted = tradersTabSessionCompleted.includes(quest.id);
+                                                const isCompleted = isSavedCompleted || isSessionCompleted;
+                                                const isTaken = userProgress.takenQuestIds.includes(quest.id);
+                                                const locList = Array.isArray(quest.location) ? quest.location : [quest.location];
+
+                                                return (
+                                                    <div key={quest.id} className={`quest-row ${isCompleted ? 'status-completed' : ''}`}>
+                                                        <div className="quest-info-block" style={{ flex: 1, cursor: 'pointer' }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                className="subtask-checkbox quest-done-check"
+                                                                checked={isCompleted}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setTradersTabSessionCompleted(prev => [...prev, quest.id]);
+                                                                        setUserProgress(prev => ({
+                                                                            ...prev,
+                                                                            takenQuestIds: prev.takenQuestIds.filter(id => id !== quest.id)
+                                                                        }));
+                                                                    } else {
+                                                                        setTradersTabSessionCompleted(prev => prev.filter(id => id !== quest.id));
+                                                                        setUserProgress(prev => ({
+                                                                            ...prev,
+                                                                            completedQuestIds: prev.completedQuestIds.filter(id => id !== quest.id)
+                                                                        }));
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <span className="quest-title-text open-quest-detail" onClick={() => onQuestClick(quest.id)}>
+                                                                {quest.title}
+                                                            </span>
+                                                            {quest.rewards && (
+                                                                <div className="quest-rewards-block">
+                                                                    {quest.rewards.rep && <span className="rw-rep">+{quest.rewards.rep} реп</span>}
+                                                                    {quest.rewards.xp && <span className="rw-xp">+{quest.rewards.xp} XP</span>}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="quest-location-right">
+                                                            {locList.map(loc => (
+                                                                <span key={loc} className={`loc-badge ${getLocationClass(loc)}`}>{loc}</span>
+                                                            ))}
+                                                        </div>
+                                                        <div className="quest-actions">
+                                                            <button
+                                                                className={`btn-take ${isTaken ? 'taken' : ''}`}
+                                                                onClick={() => {
+                                                                    setUserProgress(prev => {
+                                                                        if (isTaken) {
+                                                                            return { ...prev, takenQuestIds: prev.takenQuestIds.filter(id => id !== quest.id) };
+                                                                        } else {
+                                                                            setTradersTabSessionCompleted(p => p.filter(id => id !== quest.id));
+                                                                            return {
+                                                                                ...prev,
+                                                                                takenQuestIds: [...prev.takenQuestIds, quest.id],
+                                                                                completedQuestIds: prev.completedQuestIds.filter(id => id !== quest.id)
+                                                                            };
+                                                                        }
+                                                                    });
+                                                                }}
+                                                            >
+                                                                {isTaken ? 'Отменить' : 'Взять квест'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 );
             })}

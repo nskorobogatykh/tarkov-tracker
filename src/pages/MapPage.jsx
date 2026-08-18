@@ -1,108 +1,127 @@
-import React, { useState } from 'react';
-import { locationStaticData } from '../data/locations';
-import { questsData } from '../data/quests';
+import React, { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
+import { locationStaticData } from '../data/locations';
 
-export const MapPage = ({ activeLocation, onNavigate }) => {
-    const { progress, toggleSubtask } = useProgress();
+export const MapPage = ({ locationName, onBack, onQuestClick }) => {
+    const {
+        questsData,
+        userProgress,
+        setUserProgress,
+        mapRaidCompletedQuestIds,
+        setMapRaidCompletedQuestIds
+    } = useProgress();
+
+    const [activeExtracts, setActiveExtracts] = useState([]);
     const [showPmc, setShowPmc] = useState(true);
-    const [selectedExtracts, setSelectedExtracts] = useState([]);
 
-    const locData = locationStaticData[activeLocation];
-    if (!locData) return <div className="text-center p-8 text-gray-500">Выберите корректную карту из меню.</div>;
+    const locData = locationStaticData[locationName];
 
-    // Собираем невыполненные задачи для карты
-    const mapQuests = questsData.filter(q =>
-        progress.takenQuestIds.includes(q.id) &&
-        (q.location.includes(activeLocation) || q.location.includes('Любая'))
-    );
+    useEffect(() => {
+        if (locData?.extracts) {
+            setActiveExtracts(locData.extracts.map(e => e.id));
+        }
+        setMapRaidCompletedQuestIds([]);
+    }, [locationName, locData]);
+
+    const activeQuests = questsData.filter(q => userProgress.takenQuestIds.includes(q.id));
+    const specificQuests = activeQuests.filter(q => {
+        const locs = Array.isArray(q.location) ? q.location : [q.location];
+        return locs.includes(locationName);
+    });
+    const anyQuests = activeQuests.filter(q => {
+        const locs = Array.isArray(q.location) ? q.location : [q.location];
+        return locs.includes('Любая');
+    });
+
+    const handleQuestCheck = (qId, checked) => {
+        if (checked) {
+            setMapRaidCompletedQuestIds(prev => [...prev, qId]);
+        } else {
+            setMapRaidCompletedQuestIds(prev => prev.filter(id => id !== qId));
+        }
+    };
+
+    const handleSubtaskCheck = (stId, checked) => {
+        setUserProgress(prev => {
+            const nextSubtasks = checked
+                ? [...prev.completedSubtasks, stId]
+                : prev.completedSubtasks.filter(id => id !== stId);
+            return { ...prev, completedSubtasks: nextSubtasks };
+        });
+    };
 
     const toggleExtract = (id) => {
-        setSelectedExtracts(prev => prev.includes(id) ? prev.filter(eId => sId !== id) : [...prev, id]);
+        setActiveExtracts(prev => prev.includes(id) ? prev.filter(eId => eId !== id) : [...prev, id]);
     };
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-[340px_1fr] gap-4 h-[calc(100vh-120px)]">
-            {/* Боковая панель рейда */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-md p-4 flex flex-col justify-between overflow-y-auto">
-                <div className="space-y-4">
-                    <button onClick={() => onNavigate('active-quests')} className="w-full bg-zinc-800 hover:bg-zinc-700 text-amber-400 text-xs py-2 rounded font-bold transition">
-                        &larr; Вернуться к задачам
-                    </button>
+        <div className="map-page-layout">
+            <div className="map-sidebar">
+                <button className="btn-back" onClick={onBack}>&larr; Назад</button>
+                <h2 style={{ margin: '10px 0 0 0', color: '#d1b880' }}>{locationName}</h2>
 
-                    <div>
-                        <h3 className="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Выходы в рейде</h3>
-                        <div className="flex flex-wrap gap-1.5">
-                            {locData.extracts?.map(ext => {
-                                const isActive = selectedExtracts.includes(ext.id);
-                                return (
-                                    <button
-                                        key={ext.id}
-                                        onClick={() => toggleExtract(ext.id)}
-                                        className={`text-xs px-2.5 py-1 rounded-full border transition ${isActive ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' : 'bg-zinc-950 border-zinc-800 text-zinc-500'}`}
-                                    >
-                                        {ext.name}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                        <input type="checkbox" checked={showPmc} onChange={(e) => setShowPmc(e.target.checked)} />
+                        Отображать PMC спавны
+                    </label>
+                </div>
 
-                    <div className="border-t border-zinc-800 pt-3">
-                        <h3 className="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Задачи локации</h3>
-                        <div className="space-y-2">
-                            {mapQuests.map(quest => (
-                                <div key={quest.id} className="bg-zinc-950/60 p-2.5 rounded border border-zinc-800/80">
-                                    <div className="text-xs font-bold text-amber-400/90 mb-1">{quest.title}</div>
-                                    <div className="space-y-1 pl-1">
-                                        {quest.subtasks?.map(st => {
-                                            const isDone = progress.completedSubtasks.includes(st.id);
+                <div style={{ marginTop: '10px' }}>
+                    <h4 style={{ color: '#aaa', marginBottom: '8px', fontSize: '0.9rem' }}>Задачи в рейде:</h4>
+                    {[...specificQuests, ...anyQuests].map(quest => {
+                        const isRaidDone = mapRaidCompletedQuestIds.includes(quest.id);
+                        return (
+                            <div key={quest.id} className={`quest-row ${isRaidDone ? 'quest-completed-strikethrough' : ''}`} style={{ flexDirection: 'column', alignItems: 'stretch', padding: '8px' }}>
+                                <div className="quest-info-block">
+                                    <input type="checkbox" checked={isRaidDone} onChange={(e) => handleQuestCheck(quest.id, e.target.checked)} />
+                                    <span className="trader-badge-tag">{quest.trader}</span>
+                                    <span className="quest-title-text" style={{ cursor: 'pointer' }} onClick={() => onQuestClick(quest.id)}>{quest.title}</span>
+                                </div>
+                                {quest.subtasks && (
+                                    <div className="subtask-list" style={{ marginTop: '5px' }}>
+                                        {quest.subtasks.map(st => {
+                                            const isDone = userProgress.completedSubtasks.includes(st.id);
                                             return (
-                                                <label key={st.id} className={`flex items-center gap-2 text-xs cursor-pointer ${isDone ? 'line-through text-zinc-700' : 'text-zinc-400'}`}>
-                                                    <input type="checkbox" checked={isDone} onChange={() => toggleSubtask(st.id)} className="w-3.5 h-3.5 accent-amber-400" />
+                                                <div key={st.id} className={`subtask-item ${isDone ? 'completed' : ''}`}>
+                                                    <input type="checkbox" checked={isDone} onChange={(e) => handleSubtaskCheck(st.id, e.target.checked)} />
                                                     <span>{st.text}</span>
-                                                </label>
+                                                </div>
                                             );
                                         })}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="map-main-area">
+                <div className="extracts-bar">
+                    <span style={{ fontSize: '0.9rem', color: '#aaa' }}>Выходы:</span>
+                    <div className="extracts-chips">
+                        {locData?.extracts?.map(ext => (
+                            <div
+                                key={ext.id}
+                                className={`extract-chip ${activeExtracts.includes(ext.id) ? 'active' : ''}`}
+                                onClick={() => toggleExtract(ext.id)}
+                            >
+                                {ext.name}
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                <label className="flex items-center gap-2 bg-zinc-950 p-2.5 rounded border border-zinc-800 text-sm text-gray-300 mt-4 cursor-pointer">
-                    <input type="checkbox" checked={showPmc} onChange={(e) => setShowPmc(e.target.checked)} className="accent-red-500" />
-                    <span>Показывать спавны ЧВК</span>
-                </label>
-            </div>
-
-            {/* Область интерактивной карты */}
-            <div className="bg-zinc-950 border border-zinc-800 rounded-md relative overflow-hidden flex items-center justify-center p-4">
-                <div className="relative max-w-full max-h-full">
-                    {/* Фновая заглушка-изображение карты */}
-                    <img
-                        src="https://placehold.co"
-                        alt={activeLocation}
-                        className="w-full object-contain rounded border border-zinc-800/40"
-                    />
-
-                    {/* Статичное название карты по центру */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 px-6 py-2 rounded-md border border-zinc-800 text-xl font-bold text-amber-400 tracking-wide shadow-xl">
-                        {activeLocation}
-                    </div>
-
-                    {/* Пример рендера интерактивной метки (PMC Spawn) */}
-                    {showPmc && locData.spawns?.pmc.map((coords, i) => (
-                        <div
-                            key={i}
-                            style={{ top: `${coords[0] / 10}%`, left: `${coords[1] / 10}%` }}
-                            className="absolute w-6 h-6 bg-red-600 border border-black text-[10px] text-white font-bold rounded-full flex items-center justify-center shadow-lg transform -translate-x-1/2 -translate-y-1/2"
-                            title="PMC Spawn"
-                        >
-                            P
+                {/* Интерактивное полотно */}
+                <div id="leaflet-map-container" style={{ position: 'relative' }}>
+                    {locData ? (
+                        <div style={{ width: '100%', height: '100%', backgroundImage: `url(${locData.imageUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
+                            {/* Тут вы можете подключить полноценную Leaflet карту через базовый useEffect */}
                         </div>
-                    ))}
+                    ) : (
+                        <div style={{ color: '#aaa', padding: '20px' }}>Карта еще не добавлена</div>
+                    )}
                 </div>
             </div>
         </div>

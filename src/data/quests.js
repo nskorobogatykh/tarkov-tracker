@@ -1,4 +1,4 @@
-export const questsData = [
+export const initialQuestsData = [
     {
         "id": "0",
         "trader": "Прапор",

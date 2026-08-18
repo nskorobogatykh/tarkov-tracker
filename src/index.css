@@ -1,1 +1,732 @@
-@import "tailwindcss";
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    padding: 16px;
+}
+
+.page-view.hidden {
+    display: none !important;
+}
+
+/* Навигация (Табы) */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #2a2a2a;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+h1 {
+    color: #d1b880;
+    font-size: 1.5rem;
+}
+
+h2 {
+    font-size: 1.2rem;
+    color: #a0a0a0;
+    margin-bottom: 15px;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.tab-btn {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    color: #aaa;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tab-btn:hover {
+    background: #282828;
+    color: #fff;
+}
+
+.tab-btn.active {
+    background: #d1b880;
+    color: #121212;
+    border-color: #d1b880;
+}
+
+/* Бэйдж счетчика активных квестов */
+.tab-badge {
+    background: #121212;
+    color: #d1b880;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.tab-btn.active .tab-badge {
+    background: #121212;
+    color: #d1b880;
+}
+
+/* Выпадающее меню карт в шапке */
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Создаем невидимый мостик между кнопкой и меню, чтобы hover не сбрасывался */
+.nav-dropdown::before {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    /* Перекрывает зазор */
+    display: block;
+}
+
+.nav-dropdown-content {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    /* Небольшой отступ от кнопки */
+    right: 0;
+    background-color: #181818;
+    min-width: 170px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.6);
+    border: 1px solid #333;
+    border-radius: 4px;
+    z-index: 1000;
+    padding: 4px 0;
+}
+
+.nav-dropdown-content a {
+    color: #aaa;
+    padding: 8px 14px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.nav-dropdown-content a:hover {
+    background-color: #282828;
+    color: #d1b880;
+}
+
+/* Отображение при наведении или если добавлен класс active через JS */
+.nav-dropdown:hover .nav-dropdown-content,
+.nav-dropdown.active .nav-dropdown-content {
+    display: block;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Аккордеон торговцев */
+.trader-accordion {
+    background: #181818;
+    border: 1px solid #282828;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.trader-header-bar {
+    background: #222;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.trader-header-bar:hover {
+    background: #2a2a2a;
+}
+
+.trader-title-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.trader-name-text {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #d1b880;
+}
+
+.trader-stats-badge {
+    font-size: 0.85rem;
+    color: #888;
+    background: #141414;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.trader-content {
+    padding: 15px;
+    display: none;
+    background: #141414;
+}
+
+.trader-accordion.open .trader-content {
+    display: block;
+}
+
+/* Карточка квеста у торговца */
+.quest-row {
+    background: #1c1c1c;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.quest-row.status-completed {
+    opacity: 0.45;
+    background: #151515;
+}
+
+.quest-row.status-completed .quest-title-text {
+    text-decoration: line-through;
+    color: #777;
+}
+
+.quest-info-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1;
+}
+
+.quest-title-text {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.quest-loc-tag {
+    font-size: 0.75rem;
+    background: #282828;
+    color: #888;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.quest-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-take {
+    background: #26382b;
+    border: 1px solid #3d6645;
+    color: #8edb87;
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.btn-take.taken {
+    background: #382626;
+    border-color: #663d3d;
+    color: #db8787;
+}
+
+/* Главная сетка взятых квестов */
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Сайдбар локаций (Всегда фиксированный список) */
+.sidebar {
+    background: #181818;
+    border: 1px solid #282828;
+    border-radius: 6px;
+    padding: 16px;
+    height: fit-content;
+}
+
+.location-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #121212;
+    border: 1px solid #222;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid transparent;
+}
+
+.location-item:hover {
+    transform: translateX(3px);
+    filter: brightness(1.2);
+}
+
+.location-item.empty-loc {
+    opacity: 0.5;
+}
+
+.location-count {
+    font-weight: bold;
+    color: #d1b880;
+}
+
+/* Стили подзадач и счетчиков */
+.subtask-list {
+    margin-top: 10px;
+    padding-left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.subtask-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: #bbb;
+}
+
+.subtask-item.completed {
+    text-decoration: line-through;
+    color: #555;
+}
+
+.subtask-counter {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+
+/* Скрытие системных стрелок у input[type=number] */
+.counter-input::-webkit-outer-spin-button,
+.counter-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.counter-input {
+    -moz-appearance: textfield;
+    width: 40px;
+    text-align: center;
+    background: #111;
+    border: 1px solid #333;
+    color: #fff;
+    font-size: 0.9rem;
+    padding: 2px 0;
+    border-radius: 3px;
+    outline: none;
+}
+
+.counter-btn {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #d1b880;
+    width: 24px;
+    height: 24px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 3px;
+    font-weight: bold;
+    user-select: none;
+}
+
+.counter-btn:hover {
+    background: #3a3a3a;
+    border-color: #d1b880;
+}
+
+.counter-target-text {
+    color: #888;
+    font-size: 0.85rem;
+    margin-left: 2px;
+}
+
+/* Стили карты */
+.map-page-layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    height: calc(100vh - 80px);
+    gap: 16px;
+}
+
+.map-sidebar {
+    background: #181818;
+    border: 1px solid #282828;
+    border-radius: 6px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+.btn-back {
+    background: #242424;
+    border: 1px solid #3a3a3a;
+    color: #d1b880;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.map-main-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+}
+
+.extracts-bar {
+    background: #181818;
+    border: 1px solid #282828;
+    border-radius: 6px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.extracts-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.extract-chip {
+    background: #121212;
+    border: 1px solid #333;
+    color: #666;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.extract-chip.active {
+    background: #233821;
+    border-color: #43823d;
+    color: #8edb87;
+    font-weight: bold;
+}
+
+#leaflet-map-container {
+    flex-grow: 1;
+    background: #0d0d0d;
+    border: 1px solid #282828;
+    border-radius: 6px;
+}
+
+.custom-map-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: bold;
+    font-size: 11px;
+    border: 2px solid #000;
+}
+
+.marker-quest {
+    background: #d1b880;
+    color: #000;
+}
+
+.marker-extract {
+    background: #2e7d32;
+}
+
+.marker-pmc {
+    background: #c62828;
+}
+
+.marker-scav {
+    background: #ef6c00;
+}
+
+.marker-boss {
+    background: #6a1b9a;
+}
+
+/* Блок с наградами в списке квестов */
+.quest-rewards-block {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.78rem;
+    margin-left: 10px;
+}
+
+.rw-rep {
+    color: #8edb87;
+    background: #1e2c1e;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #335233;
+    font-weight: bold;
+}
+
+.rw-xp {
+    color: #72b1d8;
+    background: #192733;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #2a495e;
+}
+
+.rw-money {
+    color: #d1b880;
+    background: #2b261d;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #544732;
+}
+
+/* Уровень лояльности внутри торговца (под-аккордеон) */
+.ll-group {
+    margin-bottom: 8px;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #141414;
+}
+
+.ll-group.all-completed {
+    opacity: 0.5;
+    filter: grayscale(0.3);
+}
+
+.ll-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #1f1f1f;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: bold;
+    color: #d1b880;
+    user-select: none;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.ll-content {
+    display: none;
+}
+
+.ll-group.open .ll-content {
+    display: block;
+}
+
+/* Перенос локации вправо */
+.quest-location-right {
+    margin-left: auto;
+    margin-right: 12px;
+}
+
+/* Стили для боковой панели карты */
+.quest-completed-strikethrough {
+    opacity: 0.4;
+    text-decoration: line-through;
+}
+
+.trader-badge-tag {
+    background: #2a2215;
+    color: #d1b880;
+    border: 1px solid #544732;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+.location-divider {
+    border: 0;
+    border-top: 1px dashed #444;
+    margin: 12px 0 6px 0;
+}
+
+.location-divider-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+/* Фильтр локаций на странице взятых квестов */
+.location-filter-select {
+    background: #1f1f1f;
+    color: #d1b880;
+    border: 1px solid #333;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    cursor: pointer;
+    outline: none;
+}
+
+/* Плашка уровня лояльности (LL) */
+.badge-ll {
+    background: #1c2536;
+    color: #64b5f6;
+    border: 1px solid #2b3a52;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+/* Цвета плашек и тегов локаций */
+.loc-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+/* Цветовая палитра для локаций */
+.loc-factory {
+    background: #3b1d1d;
+    color: #ef9a9a;
+    border: 1px solid #632b2b;
+    border-left-color: #ef9a9a;
+}
+
+.loc-customs {
+    background: #3d311d;
+    color: #ffe082;
+    border: 1px solid #614e2d;
+    border-left-color: #ffe082;
+}
+
+.loc-shoreline {
+    background: #1a332d;
+    color: #80cbc4;
+    border: 1px solid #295248;
+    border-left-color: #80cbc4;
+}
+
+.loc-woods {
+    background: #1e331e;
+    color: #a5d6a7;
+    border: 1px solid #2d522e;
+    border-left-color: #a5d6a7;
+}
+
+.loc-inter {
+    background: #331e33;
+    color: #ce93d8;
+    border: 1px solid #522d52;
+    border-left-color: #ce93d8;
+}
+
+.loc-lighthouse {
+    background: #33311e;
+    color: #e6ee9c;
+    border: 1px solid #524f2d;
+    border-left-color: #e6ee9c;
+}
+
+.loc-streets {
+    background: #1e2d33;
+    color: #90caf9;
+    border: 1px solid #2d4752;
+    border-left-color: #90caf9;
+}
+
+.loc-any {
+    background: #2a2a2a;
+    color: #b0bec5;
+    border: 1px solid #444444;
+    border-left-color: #b0bec5;
+}
+
+/* Название карты по центру */
+.map-title-centered {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #d1b880;
+    margin: 10px 0 15px 0;
+    text-shadow: 0 0 10px rgba(209, 184, 128, 0.2);
+}
+
+/* Делаем плашки локаций визуально кликабельными */
+.quest-loc-tag,
+.loc-badge,
+.location-item {
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.quest-loc-tag:hover,
+.loc-badge:hover {
+    filter: brightness(1.25);
+    transform: translateY(-1px);
+}
+
+.btn-gold {
+    background-color: #d4b26f;
+    /* золотисто-песочный цвет акцента */
+    color: #121212;
+    border: 1px solid #d4b26f;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-gold:hover {
+    background-color: #c09d5a;
+}
